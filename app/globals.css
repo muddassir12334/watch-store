@@ -1,26 +1,351 @@
 @import "tailwindcss";
 
+/* Registered as colours so they can animate: --accent tints a page or panel,
+   --page-accent tints the light around the site canvas. */
+@property --accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0879b8;
+}
+/* Mouse position over the hero, from -1 to 1; numbers so they can ease. */
+@property --px {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --py {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --page-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0879b8;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #050608;
+  --surface: #0a0d12;
+  --text: #f4f4f2;
+  --muted: #92959d;
+  --line: rgb(255 255 255 / 0.1);
+  --accent: #0879b8;
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  transition: --page-accent 1.4s ease;
+}
+/* Put on an element whose --accent changes so the tint glides to the new colour. */
+.accent-shift {
+  transition: --accent 1.2s ease;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Small uppercase caption used across nav, SKUs and pills. */
+@utility label {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Large light uppercase headline. */
+@utility display {
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@theme {
+  --animate-rise: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-watch-in: watch-in 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 1.5rem;
+    }
+  }
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-pop: pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-toast: toast 3.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes float {
+    50% {
+      translate: 0 -10px;
+    }
+  }
+  @keyframes pop {
+    0% {
+      scale: 0.5;
+    }
+    60% {
+      scale: 1.25;
+    }
+  }
+  @keyframes toast {
+    0% {
+      opacity: 0;
+      translate: 0 1rem;
+    }
+    8%,
+    90% {
+      opacity: 1;
+      translate: 0 0;
+    }
+    100% {
+      opacity: 0;
+      translate: 0 0.5rem;
+    }
+  }
+  @keyframes watch-in {
+    from {
+      opacity: 0;
+      scale: 0.92;
+      translate: 2rem 0;
+    }
+  }
+}
+
+/* First-load entrance: elements rise in one after another (--d staggers them).
+   .enter-intro waits for the opening clock to finish on a visitor's first load. */
+.enter {
+  animation: enter-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0s);
+}
+html:not([data-intro="seen"]) .enter-intro {
+  animation-delay: calc(3.4s + var(--d, 0s));
+}
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    translate: 0 1.25rem;
+  }
+}
+
+/* Hero follows the mouse by a few pixels; --px/--py are set in hero-carousel.tsx. */
+@media (prefers-reduced-motion: no-preference) {
+  /* The glow layer itself never moves, so it can never uncover what is behind
+     it; the light shifts inside it (see Ambient) as --px/--py ease. */
+  .parallax-root {
+    transition:
+      --px 0.9s ease-out,
+      --py 0.9s ease-out;
+  }
+  .parallax-watch {
+    translate: calc(var(--px) * -12px) calc(var(--py) * -8px);
+  }
+  dialog.drawer[open] {
+    animation: drawer-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  dialog.viewer[open] {
+    animation: viewer-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+@keyframes drawer-in {
+  from {
+    translate: -100% 0;
+  }
+}
+@keyframes viewer-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .enter {
+    animation: none;
+  }
+}
+
+/* On very wide screens the site sits in a rounded canvas with soft light around it. */
+.site-canvas {
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--ink);
+}
+@media (min-width: 1536px) {
+  body {
+    background:
+      radial-gradient(55% 55% at 12% 8%, color-mix(in oklab, var(--page-accent) 62%, #10141b), transparent 70%),
+      radial-gradient(45% 50% at 92% 88%, color-mix(in oklab, var(--page-accent) 40%, #10141b), transparent 70%),
+      radial-gradient(40% 40% at 85% 10%, color-mix(in oklab, var(--page-accent) 22%, #10141b), transparent 70%),
+      #10141b;
+    background-attachment: fixed;
+  }
+  .site-canvas {
+    max-width: 1480px;
+    min-height: calc(100dvh - 3.5rem);
+    margin: 1.75rem auto;
+    overflow: clip;
+    border-radius: 2.75rem;
+    box-shadow: 0 50px 140px rgb(0 0 0 / 0.65);
+  }
+}
+
+/* Opening animation: a clock face appears, its hands spin up and settle on the
+   visitor's current time (angles set by the inline script in intro-splash.tsx),
+   then the site fades in. */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(55% 60% at 12% 45%, rgb(18 92 150 / 0.75), transparent 70%),
+    radial-gradient(50% 55% at 88% 78%, rgb(22 96 150 / 0.6), transparent 70%),
+    var(--ink);
+  animation: intro-out 0.7s ease 3.3s forwards;
+}
+.intro-case {
+  animation: intro-case 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.intro-mark {
+  opacity: 0;
+  animation: intro-fade 0.3s ease forwards;
+  animation-delay: calc(0.25s + var(--i) * 0.012s);
+}
+.intro-word {
+  opacity: 0;
+  animation: intro-fade 0.6s ease 0.9s forwards;
+}
+.intro-hour,
+.intro-minute,
+.intro-second {
+  opacity: 0;
+}
+.intro-hour {
+  animation:
+    intro-fade 0.4s ease 0.5s forwards,
+    intro-hour 2s cubic-bezier(0.3, 0, 0.15, 1) 0.6s forwards;
+}
+.intro-minute {
+  animation:
+    intro-fade 0.4s ease 0.5s forwards,
+    intro-minute 2s cubic-bezier(0.3, 0, 0.15, 1) 0.6s forwards;
+}
+/* Linear so the seconds hand is already ticking over when it lands on "now". */
+.intro-second {
+  animation:
+    intro-fade 0.4s ease 0.5s forwards,
+    intro-second 3.4s linear 0.6s forwards;
+}
+@keyframes intro-case {
+  from {
+    opacity: 0;
+    scale: 0.86;
+  }
+}
+@keyframes intro-fade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes intro-hour {
+  to {
+    rotate: calc(360deg + var(--intro-h, 305deg));
+  }
+}
+@keyframes intro-minute {
+  to {
+    rotate: calc(1080deg + var(--intro-m, 60deg));
+  }
+}
+@keyframes intro-second {
+  from {
+    rotate: calc(var(--intro-s, 200deg) - 20.4deg);
+  }
+  to {
+    rotate: var(--intro-s, 200deg);
+  }
+}
+@keyframes intro-out {
+  to {
+    opacity: 0;
+    scale: 1.06;
+    visibility: hidden;
+  }
+}
+html[data-intro="seen"] .intro {
+  display: none;
+}
+/* Reduced motion: show the clock already set to the time, then a plain fade. */
+@media (prefers-reduced-motion: reduce) {
+  .intro {
+    animation: intro-fade-out 0.5s ease 1.4s forwards;
+  }
+  .intro-case,
+  .intro-mark,
+  .intro-word,
+  .intro-hour,
+  .intro-minute,
+  .intro-second {
+    animation: none;
+    opacity: 1;
+  }
+  .intro-hour {
+    rotate: var(--intro-h, 305deg);
+  }
+  .intro-minute {
+    rotate: var(--intro-m, 60deg);
+  }
+  .intro-second {
+    rotate: var(--intro-s, 200deg);
+  }
+}
+@keyframes intro-fade-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.7);
+  backdrop-filter: blur(6px);
+}
+
+@layer base {
+  /* The native dropdown list does not inherit the select's dark background,
+     which left white text on a white list. */
+  select option,
+  select optgroup {
+    background: var(--surface);
+    color: var(--text);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
 }
